@@ -3,14 +3,15 @@
 
 	type Props = {
 		text: string;
+		class?: string;
 		children: Snippet;
 	};
 
-	let { text, children }: Props = $props();
+	let { text, class: className = 'inline-flex max-w-full', children }: Props = $props();
 </script>
 
 {#if text.trim()}
-	<span class="group relative inline-flex max-w-full">
+	<span class="group relative {className}">
 		{@render children()}
 		<span
 			role="tooltip"
@@ -20,5 +21,5 @@
 		</span>
 	</span>
 {:else}
-	{@render children()}
+	<span class={className}>{@render children()}</span>
 {/if}

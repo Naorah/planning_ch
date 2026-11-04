@@ -28,10 +28,11 @@
 		person: PlanningPerson;
 		month: string;
 		viewerId: string;
+		services: string[];
 		onsaved: () => void;
 	};
 
-	let { person, month, viewerId, onsaved }: Props = $props();
+	let { person, month, viewerId, services, onsaved }: Props = $props();
 
 	const today = isoDate(new Date());
 	const monday = nextMonday();
@@ -77,6 +78,7 @@
 	const history = untrack(() => person.preferenceHistory);
 	const initialName = untrack(() => person.displayName);
 	const initialRoles = untrack(() => person.roles);
+	const initialService = untrack(() => person.service ?? '');
 	const initialEmail = untrack(() => person.email ?? '');
 	const initialBlocked = untrack(() => person.blocked);
 	const isSelf = untrack(() => person.id === viewerId);
@@ -90,6 +92,7 @@
 	const initialMeta = untrack(() => slotMetaState(initial?.slots ?? []));
 	let displayName = $state(initialName);
 	let rolesChecked = $state(roleState(initialRoles));
+	let service = $state(initialService);
 	let email = $state(initialEmail);
 	let blocked = $state(initialBlocked);
 	let effectiveFrom = $state(monday);
@@ -187,6 +190,28 @@
 			</label>
 		{/each}
 	</fieldset>
+
+	<label class="grid gap-1">
+		<span class="text-label text-muted">Service de base</span>
+		<input
+			class="h-10 rounded-lg border border-line bg-card px-3 text-ink"
+			name="service"
+			type="text"
+			maxlength="80"
+			autocomplete="off"
+			bind:value={service}
+			placeholder="Ex. Urgences, Pédiatrie…"
+			list="person-services"
+		/>
+		<datalist id="person-services">
+			{#each services as item (item)}
+				<option value={item}></option>
+			{/each}
+		</datalist>
+		<p class="text-label text-muted">
+			Appliqué automatiquement à chaque nouvelle case cochée pour cette personne.
+		</p>
+	</label>
 
 	<div class="grid gap-2">
 		<label class="grid gap-1">

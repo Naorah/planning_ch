@@ -48,6 +48,7 @@ export type PlanningShift = {
 	period: Period;
 	icon: ShiftIcon | null;
 	note: string | null;
+	service: string | null;
 };
 
 export const WEEK_PATTERN = [
@@ -86,6 +87,7 @@ export type PlanningPerson = {
 	login: string;
 	displayName: string;
 	roles: RoleCode[];
+	service: string | null;
 	email: string | null;
 	blocked: boolean;
 	activeFrom: string;
@@ -236,6 +238,17 @@ export function normalizeNote(value: string) {
 	const note = value.trim().replace(/\s+/g, ' ');
 	if (!note) return null;
 	return note.slice(0, 200);
+}
+
+export function normalizeService(value: string) {
+	const service = value.trim().replace(/\s+/g, ' ');
+	if (!service) return null;
+	return service.slice(0, 80);
+}
+
+export function formatShiftTooltip(shift: { service: string | null; note: string | null } | null) {
+	if (!shift) return '';
+	return [shift.service, shift.note].filter(Boolean).join(' — ');
 }
 
 export function normalizeSlots(values: string[]) {

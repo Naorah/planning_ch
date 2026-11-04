@@ -18,6 +18,7 @@ type ActivePerson = {
 	activeFrom: string;
 	activeUntil: string | null;
 	periods: PresenceSpan[];
+	service: string | null;
 };
 
 export async function applyWeekPreference(
@@ -35,6 +36,7 @@ export async function applyWeekPreference(
 		period: Period;
 		icon: ShiftIcon | null;
 		note: string | null;
+		service: string | null;
 	}[] = [];
 
 	for (let date = effectiveFrom; date <= end; date = addDays(date, 1)) {
@@ -50,7 +52,8 @@ export async function applyWeekPreference(
 					date,
 					period,
 					icon: config.icon,
-					note: config.note
+					note: config.note,
+					service: person.service
 				});
 			}
 		}

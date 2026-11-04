@@ -8,6 +8,7 @@ export const users = sqliteTable(
 		passwordHash: text('password_hash').notNull(),
 		displayName: text('display_name').notNull(),
 		roles: text('roles').notNull().default('[]'),
+		service: text('service'),
 		email: text('email'),
 		admin: integer('admin', { mode: 'boolean' }).notNull().default(false),
 		blocked: integer('blocked', { mode: 'boolean' }).notNull().default(false),
@@ -62,7 +63,8 @@ export const planningEntries = sqliteTable(
 		date: text('date').notNull(),
 		period: text('period', { enum: ['matin', 'apres_midi'] }).notNull(),
 		icon: text('icon'),
-		note: text('note')
+		note: text('note'),
+		service: text('service')
 	},
 	(table) => [
 		uniqueIndex('planning_user_date_period').on(table.userId, table.date, table.period),

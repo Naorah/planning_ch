@@ -22,6 +22,7 @@
 		certifDoctorCount,
 		formatLong,
 		formatRoles,
+		formatShiftTooltip,
 		formatWeekday,
 		hasRole,
 		isActiveOn,
@@ -47,6 +48,7 @@
 		next: string;
 		days: PlanningDay[];
 		people: PlanningPerson[];
+		services: string[];
 		viewerId: string;
 		focusDate: string;
 		admin: boolean;
@@ -62,6 +64,7 @@
 		next,
 		days,
 		people: serverPeople,
+		services: serverServices,
 		viewerId,
 		focusDate,
 		admin,
@@ -93,6 +96,7 @@
 	});
 
 	let people = $state(untrack(() => clonePeople(serverPeople)));
+	let services = $state(untrack(() => [...serverServices]));
 	let query = $state('');
 	let role = $state('tous');
 	let period = $state<'tous' | Period>('tous');
@@ -131,6 +135,18 @@
 
 	$effect(() => {
 		people = clonePeople(serverPeople);
+		services = [...serverServices];
+	});
+
+	const serviceChoices = $derived.by(() => {
+		const set = new Set(services);
+		for (const person of people) {
+			if (person.service) set.add(person.service);
+			for (const shift of person.shifts) {
+				if (shift.service) set.add(shift.service);
+			}
+		}
+		return [...set].sort((a, b) => a.localeCompare(b, 'fr'));
 	});
 
 	$effect(() => {
@@ -182,9 +198,14 @@
 			.trim()
 			.replace(/\s+/g, ' ')
 			.slice(0, 200);
+		const serviceRaw = String(formData.get('service') ?? '')
+			.trim()
+			.replace(/\s+/g, ' ')
+			.slice(0, 80);
 		const key = `${userId}|${date}|${period}`;
 		pendingKey = key;
 		const snapshot = clonePeople(people);
+		const baseService = people.find((person) => person.id === userId)?.service ?? null;
 		people = people.map((person) => {
 			if (person.id !== userId) return person;
 			const rest = person.shifts.filter(
@@ -193,7 +214,16 @@
 			return {
 				...person,
 				shifts: assigned
-					? [...rest, { date, period, icon, note: note || null }]
+					? [
+							...rest,
+							{
+								date,
+								period,
+								icon,
+								note: note || null,
+								service: serviceRaw || baseService
+							}
+						]
 					: rest
 			};
 		});
@@ -328,7 +358,10 @@
 				...person,
 				shifts: taken
 					? person.shifts.filter((shift) => !(shift.date === date && shift.period === period))
-					: [...person.shifts, { date, period, icon: null, note: null }]
+					: [
+							...person.shifts,
+							{ date, period, icon: null, note: null, service: person.service }
+						]
 			};
 		});
 	}
@@ -1008,22 +1041,19 @@
 	{/if}
 {/snippet}
 
-{#snippet cellMark(person: PlanningPerson, date: string, slot: Period, taken: boolean)}
-	{@const shift = getShift(person, date, slot)}
-	{@const markIcon = shift?.icon ? SHIFT_ICON_MAP[shift.icon] : check}
-	{#if taken}
-		<Tooltip text={shift?.note ?? ''}>
-			<span class="grid size-full place-items-center">
-				<Icon icon={markIcon} class="size-3 text-taken max-[899px]:hidden!" />
-			</span>
-		</Tooltip>
+{#snippet cellMark(taken: boolean, icon: typeof check | null)}
+	{#if taken && icon}
+		<Icon icon={icon} class="size-3 text-taken max-[899px]:hidden!" />
 	{/if}
 {/snippet}
 
 {#snippet cell(person: PlanningPerson, date: string, slot: Period, last: boolean)}
 	{@const active = isActiveOn(person, date)}
-	{@const taken = active && hasShift(person, date, slot)}
+	{@const shift = getShift(person, date, slot)}
+	{@const taken = active && !!shift}
 	{@const key = `${person.id}|${date}|${slot}`}
+	{@const markIcon = shift?.icon ? SHIFT_ICON_MAP[shift.icon] : taken ? check : null}
+	{@const tip = formatShiftTooltip(shift)}
 	<td
 		class="h-6 border-r border-b border-line p-0 align-middle {dayFrame(date, slot, last)} {!active
 			? 'bg-absent'
@@ -1036,30 +1066,34 @@
 						: 'bg-card text-ink'}"
 	>
 		{#if active && admin}
-			<form class="h-full" method="POST" action="?/toggle&mois={month}" use:enhance={submitShift}>
-				<input type="hidden" name="userId" value={person.id} />
-				<input type="hidden" name="date" value={date} />
-				<input type="hidden" name="period" value={slot} />
-				<button
-					class="grid h-6 w-full cursor-pointer place-items-center border-0 bg-transparent p-0 text-inherit disabled:cursor-wait"
-					type="submit"
-					disabled={pendingKey === key}
-					aria-pressed={taken}
-					aria-label="{person.displayName}, {formatLong(date)}, {PERIOD_LABELS[slot]}, {taken
-						? 'prise'
-						: 'libre'}"
-					oncontextmenu={(event) => {
-						event.preventDefault();
-						cellFocus = { userId: person.id, date, slot };
-					}}
-				>
-					{@render cellMark(person, date, slot, taken)}
-				</button>
-			</form>
+			<Tooltip text={tip} class="flex h-full w-full">
+				<form class="h-full w-full" method="POST" action="?/toggle&mois={month}" use:enhance={submitShift}>
+					<input type="hidden" name="userId" value={person.id} />
+					<input type="hidden" name="date" value={date} />
+					<input type="hidden" name="period" value={slot} />
+					<button
+						class="grid h-6 w-full cursor-pointer place-items-center border-0 bg-transparent p-0 text-inherit disabled:cursor-wait"
+						type="submit"
+						disabled={pendingKey === key}
+						aria-pressed={taken}
+						aria-label="{person.displayName}, {formatLong(date)}, {PERIOD_LABELS[slot]}, {taken
+							? 'prise'
+							: 'libre'}"
+						oncontextmenu={(event) => {
+							event.preventDefault();
+							cellFocus = { userId: person.id, date, slot };
+						}}
+					>
+						{@render cellMark(taken, markIcon)}
+					</button>
+				</form>
+			</Tooltip>
 		{:else if active && taken}
-			<span class="grid h-6 place-items-center">
-				{@render cellMark(person, date, slot, true)}
-			</span>
+			<Tooltip text={tip} class="flex h-full w-full">
+				<span class="grid h-6 w-full place-items-center">
+					{@render cellMark(true, markIcon)}
+				</span>
+			</Tooltip>
 		{/if}
 	</td>
 {/snippet}
@@ -1122,6 +1156,7 @@
 				person={preferencePerson}
 				{month}
 				{viewerId}
+				services={serviceChoices}
 				onsaved={() => (preferenceId = null)}
 			/>
 		{/key}
@@ -1155,6 +1190,23 @@
 						checked={taken}
 					/>
 					<span class="text-body font-bold text-ink">Créneau assigné</span>
+				</label>
+				<label class="grid gap-1">
+					<span class="text-label text-muted">Service</span>
+					<select
+						class="h-10 rounded-lg border border-line bg-card px-3 text-ink"
+						name="service"
+					>
+						<option value="">Sans service</option>
+						{#each serviceChoices as item (item)}
+							<option
+								value={item}
+								selected={(cellShift?.service ?? cellPerson.service ?? '') === item}
+							>
+								{item}
+							</option>
+						{/each}
+					</select>
 				</label>
 				<fieldset class="grid gap-2 border-0 p-0">
 					<legend class="text-body font-bold text-ink">Icône</legend>

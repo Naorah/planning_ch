@@ -17,6 +17,7 @@
 		next={data.next}
 		days={data.days}
 		people={data.people}
+		services={data.services}
 		viewerId={data.viewerId}
 		focusDate={data.focusDate}
 		admin={data.admin}

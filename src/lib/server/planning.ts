@@ -4,6 +4,7 @@ import {
 	isPeriod,
 	isShiftIcon,
 	monthLabel,
+	normalizeService,
 	overlapsMonth,
 	parsePreferenceSlots,
 	parseRoles,
@@ -26,6 +27,7 @@ export async function loadPlanning(month: string) {
 			login: users.login,
 			displayName: users.displayName,
 			roles: users.roles,
+			service: users.service,
 			email: users.email,
 			blocked: users.blocked,
 			activeFrom: users.activeFrom,
@@ -33,6 +35,14 @@ export async function loadPlanning(month: string) {
 		})
 		.from(users)
 		.orderBy(asc(users.displayName));
+
+	const services = [
+		...new Set(
+			roster
+				.map((person) => normalizeService(person.service ?? ''))
+				.filter((value): value is string => !!value)
+		)
+	].sort((a, b) => a.localeCompare(b, 'fr'));
 
 	const spans =
 		roster.length === 0
@@ -74,7 +84,8 @@ export async function loadPlanning(month: string) {
 			date: planningEntries.date,
 			period: planningEntries.period,
 			icon: planningEntries.icon,
-			note: planningEntries.note
+			note: planningEntries.note,
+			service: planningEntries.service
 		})
 		.from(planningEntries)
 		.where(and(gte(planningEntries.date, start), lte(planningEntries.date, end)));
@@ -87,7 +98,8 @@ export async function loadPlanning(month: string) {
 			date: entry.date,
 			period: entry.period,
 			icon: entry.icon && isShiftIcon(entry.icon) ? entry.icon : null,
-			note: entry.note?.trim() ? entry.note.trim() : null
+			note: entry.note?.trim() ? entry.note.trim() : null,
+			service: normalizeService(entry.service ?? '')
 		});
 		byUser.set(entry.userId, list);
 	}
@@ -130,6 +142,7 @@ export async function loadPlanning(month: string) {
 			login: person.login,
 			displayName: person.displayName,
 			roles: parseRoles(person.roles),
+			service: normalizeService(person.service ?? ''),
 			blocked: !!person.blocked,
 			email: person.email ?? null,
 			activeFrom: person.activeFrom,
@@ -147,6 +160,7 @@ export async function loadPlanning(month: string) {
 		prev: shiftMonth(month, -1),
 		next: shiftMonth(month, 1),
 		days,
-		people
+		people,
+		services
 	};
 }

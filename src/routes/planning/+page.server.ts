@@ -10,6 +10,7 @@ import {
 	isShiftIcon,
 	normalizeNote,
 	normalizeRoles,
+	normalizeService,
 	normalizeSlotConfigs,
 	type PreferenceSlot
 } from '#lib/planning.ts';
@@ -72,7 +73,8 @@ export const actions: Actions = {
 			.select({
 				id: users.id,
 				activeFrom: users.activeFrom,
-				activeUntil: users.activeUntil
+				activeUntil: users.activeUntil,
+				service: users.service
 			})
 			.from(users)
 			.where(eq(users.id, userId))
@@ -111,7 +113,8 @@ export const actions: Actions = {
 			date,
 			period,
 			icon: null,
-			note: null
+			note: null,
+			service: normalizeService(person.service ?? '')
 		});
 		return { error: '' };
 	},
@@ -127,6 +130,7 @@ export const actions: Actions = {
 		const iconRaw = String(form.get('icon') ?? '');
 		const icon = iconRaw && isShiftIcon(iconRaw) ? iconRaw : null;
 		const note = normalizeNote(String(form.get('note') ?? ''));
+		const service = normalizeService(String(form.get('service') ?? ''));
 		if (!userId || !isIsoDate(date) || !isPeriod(period)) {
 			return fail(400, { error: 'Créneau invalide.' });
 		}
@@ -135,7 +139,8 @@ export const actions: Actions = {
 			.select({
 				id: users.id,
 				activeFrom: users.activeFrom,
-				activeUntil: users.activeUntil
+				activeUntil: users.activeUntil,
+				service: users.service
 			})
 			.from(users)
 			.where(eq(users.id, userId))
@@ -168,10 +173,12 @@ export const actions: Actions = {
 			return fail(400, { error: 'Hors équipe à cette date.' });
 		}
 
+		const resolvedService = service ?? normalizeService(person.service ?? '');
+
 		if (existing) {
 			await db
 				.update(planningEntries)
-				.set({ icon, note })
+				.set({ icon, note, service: resolvedService })
 				.where(eq(planningEntries.id, existing.id));
 		} else {
 			await db.insert(planningEntries).values({
@@ -180,7 +187,8 @@ export const actions: Actions = {
 				date,
 				period,
 				icon,
-				note
+				note,
+				service: resolvedService
 			});
 		}
 		return { error: '' };
@@ -207,6 +215,7 @@ export const actions: Actions = {
 			.trim()
 			.replace(/\s+/g, ' ');
 		const roles = normalizeRoles(form.getAll('roles').map(String));
+		const service = normalizeService(String(form.get('service') ?? ''));
 		const emailRaw = String(form.get('email') ?? '');
 		const email = emailRaw.trim() ? normalizeEmail(emailRaw) : null;
 		const blocked = form.get('blocked') === 'on';
@@ -270,7 +279,7 @@ export const actions: Actions = {
 
 		await db
 			.update(users)
-			.set({ displayName, roles: JSON.stringify(roles), email, blocked })
+			.set({ displayName, roles: JSON.stringify(roles), service, email, blocked })
 			.where(eq(users.id, userId));
 		if (blocked) {
 			await db.delete(sessions).where(eq(sessions.userId, userId));
@@ -299,7 +308,8 @@ export const actions: Actions = {
 		await applyWeekPreference(userId, effectiveFrom, slots, {
 			activeFrom: person.activeFrom,
 			activeUntil: person.activeUntil,
-			periods
+			periods,
+			service
 		});
 
 		return { error: '' };
