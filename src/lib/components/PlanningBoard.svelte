@@ -19,7 +19,7 @@
 	import Tooltip from '#lib/components/Tooltip.svelte';
 	import {
 		addDays,
-		certifSlotCount,
+		certifDoctorCount,
 		formatLong,
 		formatRoles,
 		formatWeekday,
@@ -237,7 +237,7 @@
 	}
 
 	function lowCertif(date: string) {
-		return certifSlotCount(people, date) < 2;
+		return certifDoctorCount(people, date) < 2;
 	}
 
 	function score(person: PlanningPerson, key: string) {
@@ -612,7 +612,7 @@
 					{formatLong(selectedDay.date)}
 				</h2>
 				{#if lowCertif(selectedDay.date)}
-					<p class="text-label text-alert">Moins de 2 créneaux médecin certif.</p>
+					<p class="text-label text-alert">Moins de 2 médecins certif distincts.</p>
 				{/if}
 				{#if showMatin}
 					{@render duty(selectedDay.date, 'matin')}
@@ -1036,12 +1036,7 @@
 						: 'bg-card text-ink'}"
 	>
 		{#if active && admin}
-			<form
-				class="h-full min-[900px]:hidden!"
-				method="POST"
-				action="?/toggle&mois={month}"
-				use:enhance={submitShift}
-			>
+			<form class="h-full" method="POST" action="?/toggle&mois={month}" use:enhance={submitShift}>
 				<input type="hidden" name="userId" value={person.id} />
 				<input type="hidden" name="date" value={date} />
 				<input type="hidden" name="period" value={slot} />
@@ -1053,20 +1048,14 @@
 					aria-label="{person.displayName}, {formatLong(date)}, {PERIOD_LABELS[slot]}, {taken
 						? 'prise'
 						: 'libre'}"
+					oncontextmenu={(event) => {
+						event.preventDefault();
+						cellFocus = { userId: person.id, date, slot };
+					}}
 				>
 					{@render cellMark(person, date, slot, taken)}
 				</button>
 			</form>
-			<button
-				class="hidden h-6 w-full cursor-pointer place-items-center border-0 bg-transparent p-0 text-inherit disabled:cursor-wait min-[900px]:grid!"
-				type="button"
-				disabled={pendingKey === key}
-				aria-pressed={taken}
-				aria-label="{person.displayName}, {formatLong(date)}, {PERIOD_LABELS[slot]}, options"
-				onclick={() => (cellFocus = { userId: person.id, date, slot })}
-			>
-				{@render cellMark(person, date, slot, taken)}
-			</button>
 		{:else if active && taken}
 			<span class="grid h-6 place-items-center">
 				{@render cellMark(person, date, slot, true)}
@@ -1090,7 +1079,7 @@
 		{/if}
 		{#if lowCertif(focus.date)}
 			<p class="rounded-lg bg-alert/10 px-3 py-2 text-label text-alert">
-				Moins de 2 créneaux médecin certif ce jour-là.
+				Moins de 2 médecins certif distincts ce jour-là.
 			</p>
 		{/if}
 		{#if roster.length === 0}

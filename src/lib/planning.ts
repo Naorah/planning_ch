@@ -384,19 +384,15 @@ export function formatPreferenceSlots(slots: PreferenceSlotConfig[]) {
 		.join(' · ');
 }
 
-/** Créneaux tenus par un médecin certif sur la journée (matin + après-midi). */
-export function certifSlotCount(
-	people: { roles: RoleCode[]; shifts: PlanningShift[] }[],
+/** Nombre de personnes distinctes « médecin certif » présentes au moins une fois dans la journée. */
+export function certifDoctorCount(
+	people: { id: string; roles: RoleCode[]; shifts: PlanningShift[] }[],
 	date: string
 ) {
 	let total = 0;
 	for (const person of people) {
 		if (!hasRole(person.roles, 'medecin_certif')) continue;
-		for (const period of PERIODS) {
-			if (person.shifts.some((shift) => shift.date === date && shift.period === period)) {
-				total += 1;
-			}
-		}
+		if (person.shifts.some((shift) => shift.date === date)) total += 1;
 	}
 	return total;
 }
