@@ -378,24 +378,13 @@
 
 	function dayFrame(date: string, slot: Period, last: boolean) {
 		const day = visibleDays.find((item) => item.date === date);
-		const warn = lowCertif(date);
-		const todayMark = !!day?.isToday;
-		if (!todayMark && !warn) return '';
+		if (!day?.isToday) return '';
 		const left = !showMatin || slot === 'matin';
 		const right = !showApres || slot === 'apres_midi';
-		// Aujourd'hui (accent) prime sur le warning certif (warn).
-		if (todayMark) {
-			return [
-				left ? 'border-l-2! border-l-accent!' : '',
-				right ? 'border-r-2! border-r-accent!' : '',
-				last ? 'border-b-2! border-b-accent!' : ''
-			].join(' ');
-		}
 		return [
-			left ? 'border-l-2! border-l-warn!' : '',
-			right ? 'border-r-2! border-r-warn!' : '',
-			last ? 'border-b-2! border-b-warn!' : '',
-			'border-t-2! border-t-warn!'
+			left ? 'border-l-2! border-l-accent!' : '',
+			right ? 'border-r-2! border-r-accent!' : '',
+			last ? 'border-b-2! border-b-accent!' : ''
 		].join(' ');
 	}
 
@@ -595,9 +584,9 @@
 		<div class="grid grid-cols-7 gap-1">
 			{#each weekDates as date (date)}
 				{@const day = days.find((item) => item.date === date)}
-				{@const uncovered = !!day && periods.some((slot) => !covered(date, slot))}
+				{@const shortCertif = !!day && lowCertif(date)}
 				<button
-					class="grid h-12 place-items-center rounded-lg text-label shadow-sm aria-pressed:bg-accent aria-pressed:text-card {uncovered
+					class="grid h-12 place-items-center rounded-lg text-label shadow-sm aria-pressed:bg-accent aria-pressed:text-card {shortCertif
 						? 'bg-alert/10 text-alert'
 						: day
 							? 'bg-card text-muted'
@@ -616,16 +605,14 @@
 
 		{#if selectedDay}
 			<article
-				class="{panel} grid gap-2 {lowCertif(selectedDay.date)
-					? 'outline outline-2 outline-warn'
-					: ''}"
+				class="{panel} grid gap-2 {lowCertif(selectedDay.date) ? 'bg-alert/10' : ''}"
 			>
 				<h2 class="text-body font-bold text-ink capitalize">
 					{formatWeekday(selectedDay.date)}
 					{formatLong(selectedDay.date)}
 				</h2>
 				{#if lowCertif(selectedDay.date)}
-					<p class="text-label text-warn">Moins de 2 créneaux médecin certif.</p>
+					<p class="text-label text-alert">Moins de 2 créneaux médecin certif.</p>
 				{/if}
 				{#if showMatin}
 					{@render duty(selectedDay.date, 'matin')}
@@ -776,9 +763,9 @@
 						{#each visibleDays as day (day.date)}
 							{#if showMatin}
 								<th
-									class="sticky top-8 z-20 h-6 border-r border-b border-line bg-card p-0 {dayFrame(day.date, 'matin', false)} {!covered(day.date, 'matin')
-										? 'text-alert'
-										: 'text-muted'}"
+									class="sticky top-8 z-20 h-6 border-r border-b border-line p-0 {dayFrame(day.date, 'matin', false)} {lowCertif(day.date)
+										? 'bg-alert/10 text-alert'
+										: 'bg-card text-muted'}"
 									scope="col"
 								>
 									<button
@@ -793,9 +780,9 @@
 							{/if}
 							{#if showApres}
 								<th
-									class="sticky top-8 z-20 h-6 border-r border-b border-line bg-card p-0 max-[899px]:bg-apres! {dayFrame(day.date, 'apres_midi', false)} {!covered(day.date, 'apres_midi')
-										? 'text-alert'
-										: 'text-muted max-[899px]:text-card!'}"
+									class="sticky top-8 z-20 h-6 border-r border-b border-line p-0 {dayFrame(day.date, 'apres_midi', false)} {lowCertif(day.date)
+										? 'bg-alert/10 text-alert'
+										: 'bg-card text-muted max-[899px]:bg-apres! max-[899px]:text-card!'}"
 									scope="col"
 								>
 									<button
@@ -912,9 +899,9 @@
 							{#if showMatin}
 								{@const total = dutyCount(day.date, 'matin')}
 								<td
-									class="sticky bottom-0 z-20 h-6 border-r border-b border-line bg-card text-center font-bold {dayFrame(day.date, 'matin', true)} {total === 0
-										? 'text-alert'
-										: 'text-ink'}"
+									class="sticky bottom-0 z-20 h-6 border-r border-b border-line text-center font-bold {dayFrame(day.date, 'matin', true)} {lowCertif(day.date)
+										? 'bg-alert/10 text-alert'
+										: 'bg-card text-ink'}"
 								>
 									{total}
 								</td>
@@ -922,9 +909,9 @@
 							{#if showApres}
 								{@const total = dutyCount(day.date, 'apres_midi')}
 								<td
-									class="sticky bottom-0 z-20 h-6 border-r border-b border-line bg-card text-center font-bold {dayFrame(day.date, 'apres_midi', true)} {total === 0
-										? 'text-alert'
-										: 'text-ink'}"
+									class="sticky bottom-0 z-20 h-6 border-r border-b border-line text-center font-bold {dayFrame(day.date, 'apres_midi', true)} {lowCertif(day.date)
+										? 'bg-alert/10 text-alert'
+										: 'bg-card text-ink'}"
 								>
 									{total}
 								</td>
@@ -1040,7 +1027,7 @@
 	<td
 		class="h-6 border-r border-b border-line p-0 align-middle {dayFrame(date, slot, last)} {!active
 			? 'bg-absent'
-			: !covered(date, slot)
+			: lowCertif(date)
 				? 'bg-alert/10 text-alert'
 				: taken
 					? 'bg-taken-soft'
@@ -1102,7 +1089,7 @@
 			<p class="rounded-lg bg-alert/10 px-3 py-2 text-label text-alert">Non couvert</p>
 		{/if}
 		{#if lowCertif(focus.date)}
-			<p class="rounded-lg bg-warn/10 px-3 py-2 text-label text-warn">
+			<p class="rounded-lg bg-alert/10 px-3 py-2 text-label text-alert">
 				Moins de 2 créneaux médecin certif ce jour-là.
 			</p>
 		{/if}
