@@ -57,6 +57,13 @@
       "when": 1793901000000,
       "tag": "0007_shift_icon_note",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1793902000000,
+      "tag": "0008_user_shift_service",
+      "breakpoints": true
     }
   ]
 }
