@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Planning">
+	<rect width="32" height="32" rx="6" fill="#f3f6f8"/>
+	<rect x="6" y="7" width="20" height="18" rx="3" fill="#ffffff"/>
+	<rect x="6" y="7" width="20" height="5" rx="3" fill="#1a6b7a"/>
+	<rect x="6" y="10" width="20" height="2" fill="#1a6b7a"/>
+	<circle cx="11" cy="18" r="1.5" fill="#1a6b7a"/>
+	<circle cx="16" cy="18" r="1.5" fill="#1a6b7a"/>
+	<circle cx="21" cy="18" r="1.5" fill="#1a6b7a"/>
+</svg>
